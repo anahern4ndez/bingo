@@ -116,8 +116,8 @@ printf("Leyendo CSV");
         temp[i] = stod(temperatura,&offset);
 		printf("STOD3:%.2f\n", temp[i]);
         getline(file, fecha);
-        fechas[i] = fecha;
-		printf("Fecha: %s\n", fechas[i].c_str());
+        //fechas[i] = fecha;
+		//printf("Fecha: %s\n", fechas[i].c_str());
 		printf("%d\n",i);
         i++;
     }
