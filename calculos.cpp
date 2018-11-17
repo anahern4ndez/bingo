@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
-#include <math.h>
 #include <chrono>
 #include <io.h>
 #include <cuda_runtime.h>
@@ -121,21 +120,19 @@ int main(int argv, char* argc[])
     
     /* lanzamiento de kernels para la prediccion
         se lanzaran N threads en los que cada uno calculara la prediccion en la hora correspondiente de su variable correspondiente. */
-    for(int i =0; i<N; i++)
-    {
-        cudaMemcpyAsync(dev_hum,hum,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
-        cudaMemcpyAsync(dev_pres,pres,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
-        cudaMemcpyAsync(dev_temp,temp,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
-        cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
-        cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
-        cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
-        prediccion<<1, N, 0, stream1>>(dev_hum, dev_secs, 2.4951, 5.293);
-        prediccion<<1, N, 1, stream2>>(dev_pres, dev_secs, 2.4951, 5.293);
-        prediccion<<1, N, 2, stream3>>(dev_temp, dev_secs, 2.4951, 5.293);
-        cudaMemcpyAsync(hum,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
-        cudaMemcpyAsync(pres,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
-        cudaMemcpyAsync(temp,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
-    }
+    cudaMemcpyAsync(dev_hum,hum,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
+    cudaMemcpyAsync(dev_pres,pres,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
+    cudaMemcpyAsync(dev_temp,temp,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
+    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
+    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
+    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
+    prediccion<<<1, N, 0, stream1>>>(dev_hum, dev_secs, regHum.pendiente, regHum.intercepto);
+    prediccion<<<1, N, 1, stream2>>>(dev_pres, dev_secs, regPres.pendiente, regPres.intercepto);
+    prediccion<<<1, N, 2, stream3>>>(dev_temp, dev_secs, regTemp.pendiente, regTemp.intercepto);
+    cudaMemcpyAsync(hum,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
+    cudaMemcpyAsync(pres,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
+    cudaMemcpyAsync(temp,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
+    
     
     /* display de prediccion o escritura en un nuevo .csv */
     
