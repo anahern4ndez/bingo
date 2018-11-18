@@ -24,7 +24,7 @@
 #include <fstream>
 
 #define N 101 //cantidad de datos en los dos dias (serian 192)
-
+#define T 101 //cantidad de datos del tercer dia (serian 96)
 using namespace std;
 
 struct regresionLineal
@@ -58,6 +58,14 @@ regresionLineal calculoRegresion(float *x, float *y)
     return reg;
 }
 
+__global__ void porcentajeError(float *resultado, float *teorico, float *predic)//el array predic tiene 96 datos pero teorico 192 porque va a tener todos los datos del csv, solo se deben tomar en cuenta los ultimos 96
+{
+    int myID = threadIdx.x + blockDim.x * blockIdx.x;
+    if(myID<T){
+        resultado[myID]=abs(teorico[myID+192]-predic[myID])*100/teorico[myID+192];
+    }
+}
+
 __global__ void prediccion(float *y, float *x, double m, double b)//y es el vector donde se guarda la prediccion
 {
     y[(int)threadIdx.x] = ((float)m*x[(int)threadIdx.x]) + (float)b; //ecuacion de una recta
@@ -66,7 +74,7 @@ __global__ void prediccion(float *y, float *x, double m, double b)//y es el vect
 
 int main(int argv, char* argc[])
 {
-    /* creacion streams */
+    /* creacion streams, un stream por variable */
     cudaStream_t stream1, stream2, stream3;
     cudaStreamCreate(&stream1);
     cudaStreamCreate(&stream2);
@@ -81,6 +89,7 @@ int main(int argv, char* argc[])
     cudaHostAlloc( (void**)&fechas, N * sizeof(int), cudaHostAllocDefault );// reserva de memoria de fechas
     cudaHostAlloc( (void**)&secs, N * sizeof(int), cudaHostAllocDefault );// reserva de memoria de segundos
     cudaMalloc( (void**)&dev_secs, N * sizeof(int) );
+    
     //stream 1
     cudaMalloc( (void**)&dev_temp, N * sizeof(int) );
     cudaHostAlloc( (void**)&temp, N * sizeof(int), cudaHostAllocDefault );
