@@ -1,4 +1,4 @@
-/*
+﻿/*
  
  Universidad del Valle de Guatemala
  CC3056
@@ -75,7 +75,7 @@ int main(int argv, char* argc[])
     /* variables del host */
     float *dev_temp, *dev_hum, *dev_pres, *dev_secs; // pointers del device
     float *temp, *hum, *pres, *secs;
-    string *fechas;
+    string fechas[N];
     
     /* reservas en memoria de los arrays a utilizar en host y pasar al device */
     cudaHostAlloc( (void**)&fechas, N * sizeof(int), cudaHostAllocDefault );// reserva de memoria de fechas
@@ -97,7 +97,7 @@ int main(int argv, char* argc[])
     
     /* lectura de datos del csv */
     int i = 0; //indice
-    string humedad, presion, temperatura, fecha;
+    string humedad, presion, temperatura, altitud, fecha;
     ifstream file("datos.csv");
 
     while (getline(file, humedad, ',')) {
@@ -110,8 +110,10 @@ int main(int argv, char* argc[])
         offset = 0;
         getline(file, temperatura, ',') ;
         temp[i] = stod(temperatura,&offset);
+        getline(file, altitud, ',');
         getline(file, fecha);
         fechas[i] = fecha;
+        printf("\ni: %d, Humedad: %.2f, Presion: %.2f, Temp: %.2f, Fecha: %s", i, hum[i], pres[i], temp[i], fechas[i].c_str());
         i++;
     }
     /* segundos de las primeras 48hr */
@@ -155,7 +157,7 @@ int main(int argv, char* argc[])
     {
         if (MiArchivo.is_open())
         {
-            MiArchivo <<hum[i]<<","<<pres[i]<<","<<temp[i]<<","<<secs[i];
+            MiArchivo <<hum[i]<<","<<pres[i]<<","<<temp[i]<<","<<secs[i]<<"\n";
         }
     }
     MiArchivo.close();
