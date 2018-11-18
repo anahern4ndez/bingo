@@ -66,7 +66,6 @@ __global__ void prediccion(float *y, float *x, double m, double b)//y es el vect
 
 int main(int argv, char* argc[])
 {
-	printf("Iniciando");
     /* creacion streams */
     cudaStream_t stream1, stream2, stream3;
     cudaStreamCreate(&stream1);
@@ -95,79 +94,71 @@ int main(int argv, char* argc[])
     cudaMalloc( (void**)&dev_pres, N * sizeof(int) );
     cudaHostAlloc( (void**)&pres, N * sizeof(int), cudaHostAllocDefault);
 
-printf("Streams terminados");
     
     /* lectura de datos del csv */
     int i = 0; //indice
     string humedad, presion, temperatura, fecha;
     ifstream file("datos.csv");
-printf("Leyendo CSV");
+
     while (getline(file, humedad, ',')) {
-		printf("\nIM COMING IN\n");
+        //hay que revisar si no esta jalando los datos de altitud, los cuales no sirven
         std::size_t offset = 0;
         hum[i] = stod(humedad,&offset);
-		printf("STOD1:%.2f\n", hum[i]);
         offset = 0;
         getline(file, presion, ',') ;
         pres[i] = stod(presion,&offset);
-		printf("STOD2:%.2f\n", pres[i]);
         offset = 0;
         getline(file, temperatura, ',') ;
         temp[i] = stod(temperatura,&offset);
-		printf("STOD3:%.2f\n", temp[i]);
         getline(file, fecha);
         fechas[i] = fecha;
-		printf("Fecha: %s\n", fechas[i].c_str());
-		printf("%d\n",i);
         i++;
     }
-
-printf("CSV leido");
-
+    /* segundos de las primeras 48hr */
     for (int i =0; i <N; i++)
     {
         secs[i] = 900*i;
     }
 
-printf("Calculando regresion");
     /* calculo de la regresion lineal para temperatura, presion y humedad */
     regresionLineal regHum = calculoRegresion(hum, secs);
     regresionLineal regPres = calculoRegresion(pres, secs);
     regresionLineal regTemp = calculoRegresion(temp, secs);
-    
+
+    /* ajustar el vector de segundos para que ahora sean los segundos del tercer dia (prediccion) */
+    for (int i =0; i <N; i++)
+    {
+        secs[i] = (192*900)+ (900*i); //48hr + segs del tercer dia
+    }
     /* lanzamiento de kernels para la prediccion
         se lanzaran N threads en los que cada uno calculara la prediccion en la hora correspondiente de su variable correspondiente. */
 
-   printf("Pasando a Device");
- cudaMemcpyAsync(dev_hum,hum,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
+    cudaMemcpyAsync(dev_hum,hum,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
     cudaMemcpyAsync(dev_pres,pres,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
     cudaMemcpyAsync(dev_temp,temp,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
     cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
     cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
     cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
 
-printf("Kernels");
-
     prediccion<<<1, N, 0, stream1>>>(dev_hum, dev_secs, regHum.pendiente, regHum.intercepto);
     prediccion<<<1, N, 1, stream2>>>(dev_pres, dev_secs, regPres.pendiente, regPres.intercepto);
     prediccion<<<1, N, 2, stream3>>>(dev_temp, dev_secs, regTemp.pendiente, regTemp.intercepto);
 
-printf("Device a Host");
-
-cudaMemcpyAsync(hum,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
+    cudaMemcpyAsync(hum,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
     cudaMemcpyAsync(pres,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
-    
-printf("Prints");
 
-for(int i=0; i<N; i++)
-{
-	printf("Humedad dia %d: %.2f\n", i, hum[i]);
-	printf("Presion dia %d: %.2f\n", i, pres[i]);
-	printf("Temperatura dia %d: %.2f\n", i, temp[i]);
-}
     /* display de prediccion o escritura en un nuevo .csv */
-    
+    //falta agregarle la fecha y hora para cada prediccion
+    ofstream MiArchivo ("prediccion.csv");
+    for(int i=0; i<N; i++)
+    {
+        if (MiArchivo.is_open())
+        {
+            MiArchivo <<hum[i]<<","<<pres[i]<<","<<temp[i]<<","<<secs[i];
+        }
+    }
+    MiArchivo.close();
     
     
     cudaStreamSynchronize(stream1); // wait for stream1 to finish
