@@ -69,24 +69,27 @@ __global__ void porcentajeError(float *resultado, float *teorico, float *predic)
 __global__ void prediccion(float *y, float *x, double m, double b)//y es el vector donde se guarda la prediccion
 {
     y[(int)threadIdx.x] = ((float)m*x[(int)threadIdx.x]) + (float)b; //ecuacion de una recta
+	printf("VALOR Y:%.2f\t VALOR X: %.2f \t M: %.2f\t B: %.2f\n", y[(int)threadIdx.x], x[(int)threadIdx.x], m, b);
+	
 }
 
 
 int main(int argv, char* argc[])
 {
     /* creacion streams, un stream por variable */
-    cudaStream_t stream1, stream2, stream3;
+    cudaStream_t stream1, stream2, stream3, stream4, stream5, stream6;
     cudaStreamCreate(&stream1);
     cudaStreamCreate(&stream2);
     cudaStreamCreate(&stream3);
+
     
     /* variables del host */
     float *dev_temp, *dev_hum, *dev_pres, *dev_secs, *dev_errorTemp, *dev_errorHum, *dev_errorPres; // pointers del device
     //float *dev_temp3, *dev_hum3, *dev_pres3;
-    float *temp, *hum, *pres, *secs;
+    float *temp, *hum, *pres, *secs, temp_res[T], hum_res[T], pres_res[T];
     string fechas[N];
-    //float temp3[T],hum3[T],pres3[T],fechas3[T],secs3[T];
-    float errorTemp[T],errorHum[T],errorPres[T];
+    //float temp3[T],hum3[T],pres3[T],fechas3[T];
+    float errorTemp[T],errorHum[T],errorPres[T],secs3[T];
     
     /* reservas en memoria de los arrays a utilizar en host y pasar al device */
     cudaHostAlloc( (void**)&fechas, N * sizeof(int), cudaHostAllocDefault );// reserva de memoria de fechas
@@ -96,25 +99,20 @@ int main(int argv, char* argc[])
     //stream 1
     cudaMalloc( (void**)&dev_temp, N * sizeof(int) );
     cudaHostAlloc( (void**)&temp, N * sizeof(int), cudaHostAllocDefault );
-    cudaMalloc( (void**)&dev_errorTemp, T*sizeof(int) );
-    cudaHostAlloc( (void**)&errorTemp, T*sizeof(int), cudaHostAllocDefault );
 
     
     //stream 2
     cudaMalloc( (void**)&dev_hum, N * sizeof(int) );
     cudaHostAlloc( (void**)&hum, N * sizeof(int), cudaHostAllocDefault);
-    cudaMalloc( (void**)&dev_errorHum, T*sizeof(int) );
-    cudaHostAlloc( (void**)&errorHum, T*sizeof(int), cudaHostAllocDefault );
 
     
     //stream 3
     cudaMalloc( (void**)&dev_pres, N * sizeof(int) );
     cudaHostAlloc( (void**)&pres, N * sizeof(int), cudaHostAllocDefault);
-    cudaMalloc( (void**)&dev_errorPres, T*sizeof(int) );
-    cudaHostAlloc( (void**)&errorPres, T*sizeof(int), cudaHostAllocDefault );
-
+    
 
     
+
     /* lectura de datos del csv */
     int i = 0; //indice
     string humedad, presion, temperatura, altitud, fecha;
@@ -173,10 +171,6 @@ int main(int argv, char* argc[])
        }*/
     }
 
-/*Segundos del tercer dia
-for (int i=0; i<T; i++){
-        secs3[i]=900*i-1; //ajuste para que no caiga a la misma hora que el dia 1 o dos
-}*/
 
     /* calculo de la regresion lineal para temperatura, presion y humedad */
     regresionLineal regHum = calculoRegresion(hum, secs);
@@ -186,7 +180,7 @@ for (int i=0; i<T; i++){
     /* ajustar el vector de segundos para que ahora sean los segundos del tercer dia (prediccion) */
     for (int i =0; i <N; i++)
     {
-        secs[i] = (192*900)+ (900*i); //48hr + segs del tercer dia
+        secs3[i] = (900*i); //48hr + segs del tercer dia
     }
     /* lanzamiento de kernels para la prediccion
         se lanzaran N threads en los que cada uno calculara la prediccion en la hora correspondiente de su variable correspondiente. */
@@ -194,59 +188,50 @@ for (int i=0; i<T; i++){
     cudaMemcpyAsync(dev_hum,hum,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
     cudaMemcpyAsync(dev_pres,pres,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
     cudaMemcpyAsync(dev_temp,temp,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
-    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
-    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
-    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
+    cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
+    cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
+    cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
 
-cudaMemcpyAsync(dev_errorHum,errorHum,T*sizeof(int),cudaMemcpyHostToDevice,stream1);
-
-cudaMemcpyAsync(dev_errorPres,errorPres,T*sizeof(int),cudaMemcpyHostToDevice,stream2);
-
-cudaMemcpyAsync(dev_errorTemp,errorTemp,T*sizeof(int),cudaMemcpyHostToDevice,stream3);
 
     prediccion<<<1, N, 0, stream1>>>(dev_hum, dev_secs, regHum.pendiente, regHum.intercepto);
     prediccion<<<1, N, 1, stream2>>>(dev_pres, dev_secs, regPres.pendiente, regPres.intercepto);
     prediccion<<<1, N, 2, stream3>>>(dev_temp, dev_secs, regTemp.pendiente, regTemp.intercepto);
 
-    porcentajeError<<<1,N,0,stream1>>>(dev_errorHum,dev_hum,dev_hum); //cambiar segundo valor por el teorico
-    porcentajeError<<<1,N,0,stream2>>>(dev_errorPres,dev_pres,dev_pres); //cambiar segundo valor por el teorico
-    porcentajeError<<<1,N,0,stream3>>>(dev_errorTemp,dev_temp,dev_temp); //cambiar segundo valor por el teorico
 
 
-    cudaMemcpyAsync(hum,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
-    cudaMemcpyAsync(pres,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
-    cudaMemcpyAsync(temp,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
-
-cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream1);
-
-cudaMemcpyAsync(errorPres,dev_errorPres,T*sizeof(int),cudaMemcpyDeviceToHost,stream2);
-
-cudaMemcpyAsync(errorTemp,dev_errorTemp,T*sizeof(int),cudaMemcpyDeviceToHost,stream3);
+cudaMemcpyAsync(hum_res,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
+    cudaMemcpyAsync(pres_res,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
+    cudaMemcpyAsync(temp_res,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
 
 
     /* display de prediccion o escritura en un nuevo .csv */
     //falta agregarle la fecha y hora para cada prediccion
+    printf("\nPREDICCIONES\n");
     ofstream MiArchivo ("prediccion.csv");
     for(int i=0; i<T; i++)
     {
         if (MiArchivo.is_open())
         {
-            MiArchivo <<hum[i]<<","<< errorHum[i]<<","<<pres[i]<<","<<errorPres[i]<<","<<temp[i]<<","<<errorTemp[i]<<","<<secs[i]<<"\n";
+            MiArchivo <<hum_res[i]<<","<< errorHum[i]<<","<<pres_res[i]<<","<<errorPres[i]<<","<<temp_res[i]<<","<<errorTemp[i]<<","<<secs[i]<<"\n";
         }
+	printf("H: %.2f (%.2f), P: %.2f (%.2f), T: %.2f (%.2f)\n", hum_res[i], errorHum[i], pres_res[i], errorPres[i], temp_res[i], errorTemp[i]);
     }
     MiArchivo.close();
-    
-    
+
+
+
     cudaStreamSynchronize(stream1); // wait for stream1 to finish
     cudaStreamSynchronize(stream2); // wait for stream2 to finish
     cudaStreamSynchronize(stream3); // wait for stream2 to finish
     cudaStreamDestroy(stream1);
     cudaStreamDestroy(stream2);
     cudaStreamDestroy(stream3);
+
     cudaFree(dev_hum);
     cudaFree(dev_temp);
     cudaFree(dev_pres);
     cudaFree(dev_secs);
+
     cudaFree(dev_errorTemp);
     cudaFree(dev_errorPres);
     cudaFree(dev_errorHum);
