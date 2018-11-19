@@ -3,9 +3,9 @@
  Universidad del Valle de Guatemala
  CC3056
  Ana Lucia Hernandez. 17138.
- Andrea Argüello. 17801.
+ Andrea Argï¿½ello. 17801.
  Proyecto 3
- Programación de Microprocesadores
+ Programaciï¿½n de Microprocesadores
  
 */
 
