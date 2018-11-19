@@ -198,11 +198,9 @@ for (int i=0; i<T; i++){
     cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
     cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
 
-cudaMemcpyAsync(dev_errorHum,errorHum,T*sizeof(int),cudaMemcpyHostToDevice,stream1);
-
-cudaMemcpyAsync(dev_errorPres,errorPres,T*sizeof(int),cudaMemcpyHostToDevice,stream2);
-
-cudaMemcpyAsync(dev_errorTemp,errorTemp,T*sizeof(int),cudaMemcpyHostToDevice,stream3);
+    cudaMemcpyAsync(dev_errorHum,errorHum,T*sizeof(int),cudaMemcpyHostToDevice,stream1);
+    cudaMemcpyAsync(dev_errorPres,errorPres,T*sizeof(int),cudaMemcpyHostToDevice,stream2);
+    cudaMemcpyAsync(dev_errorTemp,errorTemp,T*sizeof(int),cudaMemcpyHostToDevice,stream3);
 
     prediccion<<<1, N, 0, stream1>>>(dev_hum, dev_secs, regHum.pendiente, regHum.intercepto);
     prediccion<<<1, N, 1, stream2>>>(dev_pres, dev_secs, regPres.pendiente, regPres.intercepto);
@@ -217,11 +215,9 @@ cudaMemcpyAsync(dev_errorTemp,errorTemp,T*sizeof(int),cudaMemcpyHostToDevice,str
     cudaMemcpyAsync(pres,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
 
-cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream1);
-
-cudaMemcpyAsync(errorPres,dev_errorPres,T*sizeof(int),cudaMemcpyDeviceToHost,stream2);
-
-cudaMemcpyAsync(errorTemp,dev_errorTemp,T*sizeof(int),cudaMemcpyDeviceToHost,stream3);
+    cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream1);
+    cudaMemcpyAsync(errorPres,dev_errorPres,T*sizeof(int),cudaMemcpyDeviceToHost,stream2);
+    cudaMemcpyAsync(errorTemp,dev_errorTemp,T*sizeof(int),cudaMemcpyDeviceToHost,stream3);
 
 
     /* display de prediccion o escritura en un nuevo .csv */
