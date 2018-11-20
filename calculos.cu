@@ -152,26 +152,26 @@ int main(int argv, char* argc[])
 /* lectura de datos del csv del tercer dia*/
 
     i = 0; //indice
-    string humedad3, presion3, temperatura3, altitud3, fecha3;
     ifstream file3("dia3.csv");
 	printf("jfdkslajfkdslajfskd");
     while (getline(file3, humedad3, ',')) {
         //hay que revisar si no esta jalando los datos de altitud, los cuales no sirven
         std::size_t offset = 0;
         hum3[i] = std::stod(humedad3,&offset);
-		printf("humedad: %.2f", hum3[i]);
+		//printf("humedad: %.2f", hum3[i]);
         offset = 0;
         getline(file3, presion3, ',') ;
         pres3[i] = stod(presion3,&offset);
-		printf("presion: %.2f", pres3[i]);
+		//printf("presion: %.2f", pres3[i]);
         offset = 0;
         getline(file3, temperatura3, ',') ;
         temp3[i] = stod(temperatura3,&offset);
-		printf("temperatura: %.2f", temp3[i]);
+		//printf("temperatura: %.2f", temp3[i]);
         getline(file3, altitud3, ',');
         getline(file3, fecha3);
         fechas3[i] = fecha3;
-		printf("fecha: %s\n", fechas3[i].c_str());
+		//printf("fecha: %s\n", fechas3[i].c_str());
+        printf("\ni: %d, Humedad: %.2f, Presion: %.2f, Temp: %.2f, Fecha: %s", i, hum3[i], pres3[i], temp3[i], fechas3[i].c_str());
         i++;
     }
 
