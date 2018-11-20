@@ -153,6 +153,7 @@ int main(int argv, char* argc[])
 
     i = 0; //indice
     ifstream file3("dia3.csv");
+    string humedad3, presion3, temperatura3, altitud3, fecha3;
 	printf("jfdkslajfkdslajfskd");
     while (getline(file3, humedad3, ',')) {
         //hay que revisar si no esta jalando los datos de altitud, los cuales no sirven
@@ -208,23 +209,18 @@ int main(int argv, char* argc[])
     cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
     cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
     cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
-    
-	cudaMemcpyAsync(dev_hum,hum_res,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
-    cudaMemcpyAsync(dev_pres,pres_res,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
-    cudaMemcpyAsync(dev_temp,temp_res,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
-
-
     prediccion<<<1, N, 0, stream1>>>(dev_hum, dev_secs, regHum.pendiente, regHum.intercepto);
     prediccion<<<1, N, 1, stream2>>>(dev_pres, dev_secs, regPres.pendiente, regPres.intercepto);
     prediccion<<<1, N, 2, stream3>>>(dev_temp, dev_secs, regTemp.pendiente, regTemp.intercepto);
-
-
 	cudaMemcpyAsync(hum_res,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
     cudaMemcpyAsync(pres_res,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp_res,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
 
 
 /* realizacion y lanzamiento de kernels de porcentaje de error */
+    cudaMemcpyAsync(dev_hum,hum_res,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
+    cudaMemcpyAsync(dev_pres,pres_res,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
+    cudaMemcpyAsync(dev_temp,temp_res,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
 
 	porcentajeError<<<1, T, 3, stream4>>>(dev_errorHum, dev_hum3, dev_hum);
 	porcentajeError<<<1, T, 4, stream5>>>(dev_errorTemp, dev_temp3, dev_temp);
