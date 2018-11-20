@@ -1,12 +1,12 @@
 /*
- 
+
  Universidad del Valle de Guatemala
  CC3056
  Ana Lucia Hernandez. 17138.
  Andrea Arg�ello. 17801.
  Proyecto 3
  Programaci�n de Microprocesadores
- 
+
 */
 
 
@@ -69,7 +69,7 @@ __global__ void prediccion(float *y, float *x, double m, double b)//y es el vect
 {
     y[(int)threadIdx.x] = ((float)m*x[(int)threadIdx.x]) + (float)b; //ecuacion de una recta
 	printf("VALOR Y:%.2f\t VALOR X: %.2f \t M: %.2f\t B: %.2f\n", y[(int)threadIdx.x], x[(int)threadIdx.x], m, b);
-	
+
 }
 
 
@@ -84,7 +84,7 @@ int main(int argv, char* argc[])
     cudaStreamCreate(&stream5);
     cudaStreamCreate(&stream6);
 
-    
+
     /* variables del host */
     float *dev_temp, *dev_hum, *dev_pres, *dev_secs, *dev_errorTemp, *dev_errorHum, *dev_errorPres; // pointers del device
     float *dev_temp3, *dev_hum3, *dev_pres3;
@@ -92,7 +92,7 @@ int main(int argv, char* argc[])
     string fechas[N], fechas3[T];
     //float temp3[T],hum3[T],pres3[T],fechas3[T];
     float errorTemp[T],errorHum[T],errorPres[T],secs3[T];
-    
+
     /* reservas en memoria de los arrays a utilizar en host y pasar al device */
     cudaHostAlloc( (void**)&fechas, N * sizeof(int), cudaHostAllocDefault );// reserva de memoria de fechas
     cudaHostAlloc( (void**)&secs, N * sizeof(int), cudaHostAllocDefault );// reserva de memoria de segundos
@@ -102,7 +102,7 @@ int main(int argv, char* argc[])
 	cudaMalloc( (void**)&pres_res, N * sizeof(int) );
 
 
-    
+
     //stream 1
     cudaMalloc( (void**)&dev_temp, N * sizeof(int) );
 	cudaMalloc( (void**)&dev_errorTemp, N * sizeof(int) );
@@ -110,7 +110,7 @@ int main(int argv, char* argc[])
     cudaHostAlloc( (void**)&temp3, N * sizeof(int), cudaHostAllocDefault );
 	cudaHostAlloc( (void**)&dev_temp3, N * sizeof(int), cudaHostAllocDefault);
 
-    
+
     //stream 2
     cudaMalloc( (void**)&dev_hum, N * sizeof(int) );
 	cudaMalloc( (void**)&dev_errorHum, N * sizeof(int) );
@@ -118,14 +118,14 @@ int main(int argv, char* argc[])
     cudaHostAlloc( (void**)&hum, N * sizeof(int), cudaHostAllocDefault );
     cudaHostAlloc( (void**)&hum3, N * sizeof(int), cudaHostAllocDefault);
 
-    
+
     //stream 3
     cudaMalloc( (void**)&dev_pres, N * sizeof(int) );
 	cudaMalloc( (void**)&dev_errorPres, N * sizeof(int) );
 	cudaHostAlloc( (void**)&dev_pres3, N * sizeof(int), cudaHostAllocDefault);
     cudaHostAlloc( (void**)&pres3, N * sizeof(int), cudaHostAllocDefault );
     cudaHostAlloc( (void**)&pres, N * sizeof(int), cudaHostAllocDefault);
-    
+
 
     /* lectura de datos del csv */
     int i = 0; //indice
@@ -154,7 +154,7 @@ int main(int argv, char* argc[])
     i = 0; //indice
     ifstream file3("dia3.csv");
     string humedad3, presion3, temperatura3, altitud3, fecha3;
-	printf("jfdkslajfkdslajfskd");
+	  printf("jfdkslajfkdslajfskd");
     while (getline(file3, humedad3, ',')) {
         //hay que revisar si no esta jalando los datos de altitud, los cuales no sirven
         std::size_t offset = 0;
@@ -237,9 +237,10 @@ int main(int argv, char* argc[])
     {
         if (MiArchivo.is_open())
         {
+            printf("Guardando...");
             MiArchivo <<hum_res[i]<<","<< errorHum[i]<<","<<pres_res[i]<<","<<errorPres[i]<<","<<temp_res[i]<<","<<errorTemp[i]<<","<<secs[i]<<"\n";
+            printf("H: %.2f (%.2f), P: %.2f (%.2f), T: %.2f (%.2f)\n", hum_res[i], errorHum[i], pres_res[i], errorPres[i], temp_res[i], errorTemp[i]);
         }
-		printf("H: %.2f (%.2f), P: %.2f (%.2f), T: %.2f (%.2f)\n", hum_res[i], errorHum[i], pres_res[i], errorPres[i], temp_res[i], errorTemp[i]);
     }
     MiArchivo.close();
 
