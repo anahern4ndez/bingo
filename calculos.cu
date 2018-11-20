@@ -50,7 +50,7 @@ regresionLineal calculoRegresion(float *x, float *y)
     }
     sumx = sumx/2;
     /* calculo de la pendiente */
-    m =(N*sumProd)-(sumx*sumy)/((N*sumx_2)-(sumx*sumx));
+    m =((N*sumProd)-(sumx*sumy))/((N*sumx_2)-(sumx*sumx));
     /* calculo del intercepto */
     b = (sumy - (m*sumx))/N;
     reg.pendiente = m;
