@@ -198,7 +198,7 @@ int main(int argv, char* argc[])
     /* ajustar el vector de segundos para que ahora sean los segundos del tercer dia (prediccion) */
     for (int i =0; i <N; i++)
     {
-        secs3[i] = (900*i); //48hr + segs del tercer dia
+        secs3[i] = (900*i)+2; //48hr + segs del tercer dia
     }
     /* lanzamiento de kernels para la prediccion
         se lanzaran N threads en los que cada uno calculara la prediccion en la hora correspondiente de su variable correspondiente. */
@@ -221,6 +221,9 @@ int main(int argv, char* argc[])
     cudaMemcpyAsync(dev_hum,hum_res,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
     cudaMemcpyAsync(dev_pres,pres_res,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
     cudaMemcpyAsync(dev_temp,temp_res,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
+    cudaMemcpyAsync(dev_hum3,humedad3,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
+    cudaMemcpyAsync(dev_pres3,pres3,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
+    cudaMemcpyAsync(dev_temp3,temp3,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
 
 	porcentajeError<<<1, T, 3, stream4>>>(dev_errorHum, dev_hum3, dev_hum);
 	porcentajeError<<<1, T, 4, stream5>>>(dev_errorTemp, dev_temp3, dev_temp);
