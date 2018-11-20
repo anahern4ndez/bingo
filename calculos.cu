@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
+#include <io.h>
 #include <cuda_runtime.h>
 #include <fstream>
 
