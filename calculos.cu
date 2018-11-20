@@ -215,13 +215,15 @@ int main(int argv, char* argc[])
 	cudaMemcpyAsync(hum_res,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
     cudaMemcpyAsync(pres_res,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp_res,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
-
+    cudaStreamSynchronize(stream1); // wait for stream1 to finish
+    cudaStreamSynchronize(stream2); // wait for stream2 to finish
+    cudaStreamSynchronize(stream3); // wait for stream3 to finish
 
 /* realizacion y lanzamiento de kernels de porcentaje de error */
     cudaMemcpyAsync(dev_hum,hum_res,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
     cudaMemcpyAsync(dev_pres,pres_res,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
     cudaMemcpyAsync(dev_temp,temp_res,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
-    cudaMemcpyAsync(dev_hum3,humedad3,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
+    cudaMemcpyAsync(dev_hum3,hum3,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
     cudaMemcpyAsync(dev_pres3,pres3,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
     cudaMemcpyAsync(dev_temp3,temp3,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
 
@@ -232,6 +234,9 @@ int main(int argv, char* argc[])
 	cudaMemcpyAsync(errorHum,dev_errorHum,N*sizeof(int),cudaMemcpyDeviceToHost,stream4);
     cudaMemcpyAsync(errorPres,dev_errorPres,N*sizeof(int),cudaMemcpyDeviceToHost,stream5);
     cudaMemcpyAsync(errorTemp,dev_errorTemp,N*sizeof(int),cudaMemcpyDeviceToHost,stream6);
+    cudaStreamSynchronize(stream5);
+    cudaStreamSynchronize(stream4);
+    cudaStreamSynchronize(stream6);
     /* display de prediccion o escritura en un nuevo .csv */
     //falta agregarle la fecha y hora para cada prediccion
     printf("\nPREDICCIONES\n");
@@ -247,12 +252,8 @@ int main(int argv, char* argc[])
     }
     MiArchivo.close();
 
-    cudaStreamSynchronize(stream1); // wait for stream1 to finish
-    cudaStreamSynchronize(stream2); // wait for stream2 to finish
-    cudaStreamSynchronize(stream3); // wait for stream2 to finish
-    cudaStreamSynchronize(stream5);
-    cudaStreamSynchronize(stream4);
-    cudaStreamSynchronize(stream6);
+
+
 
     cudaStreamDestroy(stream1);
     cudaStreamDestroy(stream2);
