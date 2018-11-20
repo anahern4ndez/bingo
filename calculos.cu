@@ -48,6 +48,7 @@ regresionLineal calculoRegresion(float *x, float *y)
         sumProd += (double)x[i]*y[i];
         sumx_2 += (double)x[i]*x[i];
     }
+    sumx = sumx/2;
     /* calculo de la pendiente */
     m =(N*sumProd)-(sumx*sumy)/((N*sumx_2)-(sumx*sumx));
     /* calculo del intercepto */
@@ -185,7 +186,7 @@ int main(int argv, char* argc[])
 	  if(i<N/2){
         secs[i] = 900*i;}
 	  else{
-	   secs[i]=900*(i-N/2)+1;//ajuste para que el segundo dia no caiga en la misma hora
+	   secs[i]=900*(i-N/2);//ajuste para que el segundo dia no caiga en la misma hora
        }
     }
 
@@ -196,9 +197,9 @@ int main(int argv, char* argc[])
     regresionLineal regTemp = calculoRegresion(temp, secs);
 
     /* ajustar el vector de segundos para que ahora sean los segundos del tercer dia (prediccion) */
-    for (int i =0; i <N; i++)
+    for (int i =0; i <T; i++)
     {
-        secs3[i] = (900*i)+2; //48hr + segs del tercer dia
+        secs3[i] = (900*i); //48hr + segs del tercer dia
     }
     /* lanzamiento de kernels para la prediccion
         se lanzaran N threads en los que cada uno calculara la prediccion en la hora correspondiente de su variable correspondiente. */
@@ -206,9 +207,9 @@ int main(int argv, char* argc[])
     cudaMemcpyAsync(dev_hum,hum,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
     cudaMemcpyAsync(dev_pres,pres,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
     cudaMemcpyAsync(dev_temp,temp,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
-    cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
-    cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
-    cudaMemcpyAsync(dev_secs,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
+    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream1);
+    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
+    cudaMemcpyAsync(dev_secs,secs,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
     prediccion<<<1, N, 0, stream1>>>(dev_hum, dev_secs, regHum.pendiente, regHum.intercepto);
     prediccion<<<1, N, 1, stream2>>>(dev_pres, dev_secs, regPres.pendiente, regPres.intercepto);
     prediccion<<<1, N, 2, stream3>>>(dev_temp, dev_secs, regTemp.pendiente, regTemp.intercepto);
