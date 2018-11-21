@@ -63,6 +63,7 @@ __global__ void porcentajeError(float *resultado, float *teorico, float *predic)
     int myID = threadIdx.x; //deberian ser 96?
     if(myID<T){
         resultado[myID]=abs(teorico[myID]-predic[myID])*100/teorico[myID];
+        printf("\n\tTeorico: %.3f\tPrediccion: %.3f\tError: %.3f");
     }
 }
 
