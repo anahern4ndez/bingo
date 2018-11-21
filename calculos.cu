@@ -154,25 +154,20 @@ int main(int argv, char* argc[])
 
     i = 0; //indice
     ifstream file3("dia3.csv");
-    string humedad3, presion3, temperatura3, altitud3, fecha3;
 	  printf("jfdkslajfkdslajfskd");
-    while (getline(file3, humedad3, ',')) {
+    while (getline(file, humedad, ',')) {
         //hay que revisar si no esta jalando los datos de altitud, los cuales no sirven
         std::size_t offset = 0;
-        hum3[i] = std::stod(humedad3,&offset);
-		//printf("humedad: %.2f", hum3[i]);
+        hum3[i] = std::stod(humedad,&offset);
         offset = 0;
-        getline(file3, presion3, ',') ;
-        pres3[i] = stod(presion3,&offset);
-		//printf("presion: %.2f", pres3[i]);
+        getline(file, presion, ',') ;
+        pres3[i] = stod(presion,&offset);
         offset = 0;
-        getline(file3, temperatura3, ',') ;
-        temp3[i] = stod(temperatura3,&offset);
-		//printf("temperatura: %.2f", temp3[i]);
-        getline(file3, altitud3, ',');
-        getline(file3, fecha3);
-        fechas3[i] = fecha3;
-		//printf("fecha: %s\n", fechas3[i].c_str());
+        getline(file, temperatura, ',') ;
+        temp3[i] = std::stod(temperatura,&offset);
+        getline(file, altitud, ',');
+        getline(file, fecha);
+        fechas3[i] = fecha;
         printf("\ni: %d, Humedad: %.2f, Presion: %.2f, Temp: %.2f, Fecha: %s", i, hum3[i], pres3[i], temp3[i], fechas3[i].c_str());
         i++;
     }
@@ -182,12 +177,6 @@ int main(int argv, char* argc[])
     for (int i =0; i <N; i++)
     {
         secs[i]=900*i;
-	//Ya con los datos de los primeros dos dias
-	  if(i<N/2){
-        secs[i] = 900*i;}
-	  else{
-	   secs[i]=900*(i-N/2);//ajuste para que el segundo dia no caiga en la misma hora
-       }
     }
 
 
@@ -216,9 +205,6 @@ int main(int argv, char* argc[])
 	cudaMemcpyAsync(hum_res,dev_hum,N*sizeof(int),cudaMemcpyDeviceToHost,stream1);
     cudaMemcpyAsync(pres_res,dev_pres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp_res,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
-    cudaStreamSynchronize(stream1); // wait for stream1 to finish
-    cudaStreamSynchronize(stream2); // wait for stream2 to finish
-    cudaStreamSynchronize(stream3); // wait for stream3 to finish
 
 /* realizacion y lanzamiento de kernels de porcentaje de error */
     cudaMemcpyAsync(dev_hum,hum_res,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
@@ -235,9 +221,6 @@ int main(int argv, char* argc[])
 	cudaMemcpyAsync(errorHum,dev_errorHum,N*sizeof(int),cudaMemcpyDeviceToHost,stream4);
     cudaMemcpyAsync(errorPres,dev_errorPres,N*sizeof(int),cudaMemcpyDeviceToHost,stream5);
     cudaMemcpyAsync(errorTemp,dev_errorTemp,N*sizeof(int),cudaMemcpyDeviceToHost,stream6);
-    cudaStreamSynchronize(stream5);
-    cudaStreamSynchronize(stream4);
-    cudaStreamSynchronize(stream6);
     /* display de prediccion o escritura en un nuevo .csv */
     //falta agregarle la fecha y hora para cada prediccion
     printf("\nPREDICCIONES\n");
@@ -253,8 +236,12 @@ int main(int argv, char* argc[])
     }
     MiArchivo.close();
 
-
-
+    cudaStreamSynchronize(stream1); // wait for stream1 to finish
+    cudaStreamSynchronize(stream2); // wait for stream2 to finish
+    cudaStreamSynchronize(stream3); // wait for stream3 to finish
+    cudaStreamSynchronize(stream5);
+    cudaStreamSynchronize(stream4);
+    cudaStreamSynchronize(stream6);
 
     cudaStreamDestroy(stream1);
     cudaStreamDestroy(stream2);
