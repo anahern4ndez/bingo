@@ -69,8 +69,14 @@ __global__ void porcentajeError(float *resultado, float *teorico, float *predic)
 
 __global__ void prediccion(float *y, float *x, double m, double b)//y es el vector donde se guarda la prediccion
 {
-    y[(int)threadIdx.x] = ((float)m*x[(int)threadIdx.x]) + (float)b; //ecuacion de una recta
-	printf("VALOR Y:%.2f\t VALOR X: %.2f \t M: %.2f\t B: %.2f\n", y[(int)threadIdx.x], x[(int)threadIdx.x], m, b);
+    printf("hola prros");
+	float predic[T];
+	int ia = threadIdx.x + blockDim.x * blockIdx.x; //indice a (todos los valores del dia 1)
+	int ib = (threadIdx.x + blockDim.x * blockIdx.x) + (T*900); //indice b (todos los valores del dia 2)
+	int xf = (threadIdx.x + blockDim.x * blockIdx.x) + (2*T*900); //indice c (del valor y que queremos, en el dia 3)
+	predic[ia] = y[ia] + ((xf-x[ia])*((y[ib]-y[ia])/(x[ib]- x[ia])));
+	y[ia] = predic[ia];
+	printf("VALOR Y:%.2f\t VALOR X: %.2f \t M: %.2f\t B: %.2f\n",y[ia], x[ia], m, b);
 
 }
 
@@ -208,9 +214,9 @@ int main(int argv, char* argc[])
     cudaMemcpyAsync(temp_res,dev_temp,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
 
 /* realizacion y lanzamiento de kernels de porcentaje de error */
-    cudaMemcpyAsync(dev_hum,hum_res,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
-    cudaMemcpyAsync(dev_pres,pres_res,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
-    cudaMemcpyAsync(dev_temp,temp_res,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
+    //cudaMemcpyAsync(dev_hum,hum_res,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
+    //cudaMemcpyAsync(dev_pres,pres_res,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
+    //cudaMemcpyAsync(dev_temp,temp_res,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
     cudaMemcpyAsync(dev_hum3,hum3,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
     cudaMemcpyAsync(dev_pres3,pres3,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
     cudaMemcpyAsync(dev_temp3,temp3,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
