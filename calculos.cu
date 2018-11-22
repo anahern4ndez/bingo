@@ -167,16 +167,17 @@ int main(int argv, char* argc[])
 /* lectura de datos del csv del tercer dia*/
     i = 0; //indice
     ifstream file3("dia3.csv");
-    while (getline(file, humedad, ',')) {
+    while (getline(file3, humedad, ',')) {
         //hay que revisar si no esta jalando los datos de altitud, los cuales no sirven
         hum3[i] = (float)atof(humedad.c_str());
-        getline(file, presion, ',') ;
+        getline(file3, presion, ',') ;
         pres3[i] = (float)atof(presion.c_str());
-        getline(file, temperatura, ',') ;
+        getline(file3, temperatura, ',') ;
         temp3[i] = (float)atof(temperatura.c_str());
-        getline(file, altitud, ',');
-        getline(file, fecha);
+        getline(file3, altitud, ',');
+        getline(file3, fecha);
         fechas3[i] = fecha;
+        printf("\ni: %d, Humedad: %.2f, Presion: %.2f, Temp: %.2f, Fecha: %s", i, hum3[i], pres3[i], temp3[i], fechas3[i].c_str());
         i++;
     }
 
@@ -209,10 +210,6 @@ int main(int argv, char* argc[])
     cudaMemcpyAsync(dev_secs3,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream2);
     cudaMemcpyAsync(dev_secs3,secs3,N*sizeof(int),cudaMemcpyHostToDevice,stream3);
 
-    cudaMemcpyAsync(dev_hum3,hum3,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
-    cudaMemcpyAsync(dev_pres3,pres3,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
-    cudaMemcpyAsync(dev_temp3,temp3,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
-
     prediccion<<<1, T, 0, stream1>>>(dev_humres, dev_secs3, dev_secs, dev_hum);
     prediccion<<<1, T, 1, stream2>>>(dev_presres, dev_secs3, dev_secs, dev_pres);
     prediccion<<<1, T, 2, stream3>>>(dev_tempres, dev_secs3, dev_secs, dev_temp);
@@ -220,21 +217,25 @@ int main(int argv, char* argc[])
     cudaMemcpyAsync(pres_res,dev_presres,N*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp_res,dev_tempres,N*sizeof(int),cudaMemcpyDeviceToHost,stream3);
 
+
+    cudaStreamSynchronize(stream1); // wait for stream1 to finish
+    cudaStreamSynchronize(stream2); // wait for stream2 to finish
+    cudaStreamSynchronize(stream3); // wait for stream3 to finish
 /* realizacion y lanzamiento de kernels de porcentaje de error */
-    cudaMemcpyAsync(dev_humres,hum_res,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
-    cudaMemcpyAsync(dev_presres,pres_res,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
-    cudaMemcpyAsync(dev_tempres,temp_res,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
-    cudaMemcpyAsync(dev_hum3,hum3,N*sizeof(int),cudaMemcpyHostToDevice,stream4);
-    cudaMemcpyAsync(dev_pres3,pres3,N*sizeof(int),cudaMemcpyHostToDevice,stream5);
-    cudaMemcpyAsync(dev_temp3,temp3,N*sizeof(int),cudaMemcpyHostToDevice,stream6);
+    cudaMemcpyAsync(dev_humres,hum_res,T*sizeof(int),cudaMemcpyHostToDevice,stream4);
+    cudaMemcpyAsync(dev_presres,pres_res,T*sizeof(int),cudaMemcpyHostToDevice,stream5);
+    cudaMemcpyAsync(dev_tempres,temp_res,T*sizeof(int),cudaMemcpyHostToDevice,stream6);
+    cudaMemcpyAsync(dev_hum3,hum3,T*sizeof(int),cudaMemcpyHostToDevice,stream4);
+    cudaMemcpyAsync(dev_pres3,pres3,T*sizeof(int),cudaMemcpyHostToDevice,stream5);
+    cudaMemcpyAsync(dev_temp3,temp3,T*sizeof(int),cudaMemcpyHostToDevice,stream6);
 
 	porcentajeError<<<1, T, 3, stream4>>>(dev_errorHum, dev_hum3, dev_humres);
 	porcentajeError<<<1, T, 4, stream5>>>(dev_errorPres, dev_pres3, dev_presres);
     porcentajeError<<<1, T, 5, stream6>>>(dev_errorTemp, dev_temp3, dev_tempres);
 
-	cudaMemcpyAsync(errorHum,dev_errorHum,N*sizeof(int),cudaMemcpyDeviceToHost,stream4);
-    cudaMemcpyAsync(errorPres,dev_errorPres,N*sizeof(int),cudaMemcpyDeviceToHost,stream5);
-    cudaMemcpyAsync(errorTemp,dev_errorTemp,N*sizeof(int),cudaMemcpyDeviceToHost,stream6);
+	cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream4);
+    cudaMemcpyAsync(errorPres,dev_errorPres,T*sizeof(int),cudaMemcpyDeviceToHost,stream5);
+    cudaMemcpyAsync(errorTemp,dev_errorTemp,T*sizeof(int),cudaMemcpyDeviceToHost,stream6);
 
         /* display de prediccion o escritura en un nuevo .csv */
     //falta agregarle la fecha y hora para cada prediccion
@@ -262,10 +263,6 @@ int main(int argv, char* argc[])
     }
     MiArchivo.close();
 
-
-    cudaStreamSynchronize(stream1); // wait for stream1 to finish
-    cudaStreamSynchronize(stream2); // wait for stream2 to finish
-    cudaStreamSynchronize(stream3); // wait for stream3 to finish
     cudaStreamSynchronize(stream5);
     cudaStreamSynchronize(stream4);
     cudaStreamSynchronize(stream6);
