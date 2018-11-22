@@ -126,7 +126,7 @@ else ifneq ($(TARGET_ARCH),$(HOST_ARCH))
         HOST_COMPILER ?= powerpc64le-linux-gnu-g++
     endif
 endif
-HOST_COMPILER ?= g++ 
+HOST_COMPILER ?= g++
 NVCC          := $(CUDA_PATH)/bin/nvcc -ccbin $(HOST_COMPILER)
 
 # internal flags
@@ -237,7 +237,7 @@ run: build
 	$(EXEC) ./calculos
 
 clean:
-	rm -f calculos calculos.o
+	rm -f calculos calculos
 	rm -rf ../../bin/$(TARGET_ARCH)/$(TARGET_OS)/$(BUILD_TYPE)/calculos
 
 clobber: clean
