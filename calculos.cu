@@ -185,11 +185,6 @@ int main(int argv, char* argc[])
     cudaMemcpyAsync(pres_res,dev_presres,T*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp_res,dev_tempres,T*sizeof(int),cudaMemcpyDeviceToHost,stream3);
 
-
-    cudaStreamSynchronize(stream1); // wait for stream1 to finish
-    cudaStreamSynchronize(stream2); // wait for stream2 to finish
-    cudaStreamSynchronize(stream3); // wait for stream3 to finish
-
     /* realizacion y lanzamiento de kernels de porcentaje de error */
     cudaMemcpyAsync(dev_phum,hum_res,T*sizeof(int),cudaMemcpyHostToDevice,stream4);
     cudaMemcpyAsync(dev_ppres,pres_res,T*sizeof(int),cudaMemcpyHostToDevice,stream5);
@@ -200,15 +195,18 @@ int main(int argv, char* argc[])
 
     //3 kernels de un bloque de T hilos, un hilo por cada dato
 
-	  porcentajeError<<<1, T, 0, stream4>>>(dev_errorHum, dev_hum3, dev_phum);
-	  porcentajeError<<<1, T, 0, stream5>>>(dev_errorPres, dev_pres3, dev_ppres);
-    porcentajeError<<<1, T, 0, stream6>>>(dev_errorTemp, dev_temp3, dev_ptemp);
+	porcentajeError<<<1, T, 3, stream4>>>(dev_errorHum, dev_hum3, dev_phum);
+	porcentajeError<<<1, T, 4, stream5>>>(dev_errorPres, dev_pres3, dev_ppres);
+    porcentajeError<<<1, T, 5, stream6>>>(dev_errorTemp, dev_temp3, dev_ptemp);
 
 	  cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream4);
     cudaMemcpyAsync(errorPres,dev_errorPres,T*sizeof(int),cudaMemcpyDeviceToHost,stream5);
     cudaMemcpyAsync(errorTemp,dev_errorTemp,T*sizeof(int),cudaMemcpyDeviceToHost,stream6);
 
     //Esperar a finalizacion de streams
+    cudaStreamSynchronize(stream1); 
+    cudaStreamSynchronize(stream2); 
+    cudaStreamSynchronize(stream3); 
     cudaStreamSynchronize(stream5);
     cudaStreamSynchronize(stream4);
     cudaStreamSynchronize(stream6);
