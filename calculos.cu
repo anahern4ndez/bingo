@@ -192,25 +192,6 @@ int main(int argv, char* argc[])
     
 	cudaEventRecord(stop1);
 
-    //stream 4
-    cudaMalloc( (void**)&dev_hum3, T * sizeof(int) ); //humedad dia 3
-    cudaMalloc( (void**)&dev_errorHum, T * sizeof(int) ); // % error device
-    cudaHostAlloc( (void**)&errorHum, T * sizeof(int), cudaHostAllocDefault ); // % error
-    cudaMalloc( (void**)&dev_phum, T * sizeof(int) ); //prediccion de humedad en device
-
-    //stream 5
-    cudaMalloc( (void**)&dev_ppres, T * sizeof(int) ); //prediccion de presion en device
-    cudaMalloc( (void**)&dev_pres3, T * sizeof(int) ); //presion dia 3
-    cudaMalloc( (void**)&dev_errorPres, T * sizeof(int) ); // % error device
-    cudaHostAlloc( (void**)&errorPres, T * sizeof(int), cudaHostAllocDefault ); // % error
-
-
-    //stream 6
-    cudaMalloc( (void**)&dev_ptemp, T * sizeof(int) ); //prediccion de temperatura en device
-    cudaMalloc( (void**)&dev_temp3, T * sizeof(int) ); //temperatura dia 3
-    cudaMalloc( (void**)&dev_errorTemp, T * sizeof(int) ); // % error device
-    cudaHostAlloc( (void**)&errorTemp, T * sizeof(int), cudaHostAllocDefault ); // % error
-
 	cudaEventRecord(start2);
     /* realizacion y lanzamiento de kernels de porcentaje de error */
     cudaMemcpyAsync(dev_phum,hum_res,T*sizeof(int),cudaMemcpyHostToDevice,stream4);
@@ -238,9 +219,9 @@ int main(int argv, char* argc[])
     cudaStreamSynchronize(stream4);
     cudaStreamSynchronize(stream6);
 
-	  cudaEventRecord(stop2);
-	  cudaEventSynchronize(stop1);
-	  cudaEventSynchronize(stop2);
+    cudaEventRecord(stop2);
+    cudaEventSynchronize(stop1);
+    cudaEventSynchronize(stop2);
 
     //Impresion de datos
     printf("\t\t\t\t\t\t\tPROYECTO FINAL MICROPROCESADORES");

@@ -52,14 +52,14 @@ int main(int argv, char* argc[])
      * (temperatura, presion, humedad) y sus respectivos % de error */
     cudaStream_t stream1, stream2, stream3, stream4, stream5, stream6;
     cudaEvent_t start1, stop1,start2,stop2;
-	cudaEventCreate(&start1);
-	cudaEventCreate(&stop1);
-	cudaEventCreate(&start2);
-	cudaEventCreate(&stop2);
+    cudaEventCreate(&start1);
+    cudaEventCreate(&stop1);
+    cudaEventCreate(&start2);
+    cudaEventCreate(&stop2);
     cudaStreamCreate(&stream1);
     cudaStreamCreate(&stream2);
     cudaStreamCreate(&stream3);
-	  cudaStreamCreate(&stream4);
+	cudaStreamCreate(&stream4);
     cudaStreamCreate(&stream5);
     cudaStreamCreate(&stream6);
 
@@ -91,8 +91,6 @@ int main(int argv, char* argc[])
     cudaHostAlloc( (void**)&temp, N * sizeof(int), cudaHostAllocDefault );
     cudaHostAlloc( (void**)&temp_res, T * sizeof(int), cudaHostAllocDefault );
 
-
-
     //stream 2
     cudaMalloc( (void**)&dev_hum, N * sizeof(int) );
     cudaHostAlloc( (void**)&hum, N * sizeof(int), cudaHostAllocDefault );
@@ -103,6 +101,26 @@ int main(int argv, char* argc[])
     cudaMalloc( (void**)&dev_pres, N * sizeof(int) );
     cudaHostAlloc( (void**)&pres_res, T * sizeof(int), cudaHostAllocDefault );
     cudaHostAlloc( (void**)&pres, N * sizeof(int), cudaHostAllocDefault);
+
+    //stream 4
+    cudaMalloc( (void**)&dev_hum3, T * sizeof(int) ); //humedad dia 3
+    cudaMalloc( (void**)&dev_errorHum, T * sizeof(int) ); // % error device
+    cudaHostAlloc( (void**)&errorHum, T * sizeof(int), cudaHostAllocDefault ); // % error
+    cudaMalloc( (void**)&dev_phum, T * sizeof(int) ); //prediccion de humedad en device
+
+    //stream 5
+    cudaMalloc( (void**)&dev_ppres, T * sizeof(int) ); //prediccion de presion en device
+    cudaMalloc( (void**)&dev_pres3, T * sizeof(int) ); //presion dia 3
+    cudaMalloc( (void**)&dev_errorPres, T * sizeof(int) ); // % error device
+    cudaHostAlloc( (void**)&errorPres, T * sizeof(int), cudaHostAllocDefault ); // % error
+
+
+    //stream 6
+    cudaMalloc( (void**)&dev_ptemp, T * sizeof(int) ); //prediccion de temperatura en device
+    cudaMalloc( (void**)&dev_temp3, T * sizeof(int) ); //temperatura dia 3
+    cudaMalloc( (void**)&dev_errorTemp, T * sizeof(int) ); // % error device
+    cudaHostAlloc( (void**)&errorTemp, T * sizeof(int), cudaHostAllocDefault ); // % error
+
 
     /* lectura de datos del csv dias 1 y 2*/
     int i = 0; //indice
@@ -165,45 +183,16 @@ int main(int argv, char* argc[])
     cudaMemcpyAsync(dev_secs3,secs3,T*sizeof(int),cudaMemcpyHostToDevice,stream2);
     cudaMemcpyAsync(dev_secs3,secs3,T*sizeof(int),cudaMemcpyHostToDevice,stream3);
 
-    //3 kernels de un bloque de T hilos, un hilo por cada dato
-
     prediccion<<<1, T, 0, stream1>>>(dev_humres, dev_secs3, dev_secs, dev_hum);
-
-    prediccion<<<1, T, 0, stream2>>>(dev_presres, dev_secs3, dev_secs, dev_pres);
-
-    prediccion<<<1, T, 0, stream3>>>(dev_tempres, dev_secs3, dev_secs, dev_temp);
-
-	  cudaMemcpyAsync(hum_res,dev_humres,T*sizeof(int),cudaMemcpyDeviceToHost,stream1);
+    prediccion<<<1, T, 1, stream2>>>(dev_presres, dev_secs3, dev_secs, dev_pres);
+    prediccion<<<1, T, 2, stream3>>>(dev_tempres, dev_secs3, dev_secs, dev_temp);
+	cudaMemcpyAsync(hum_res,dev_humres,T*sizeof(int),cudaMemcpyDeviceToHost,stream1);
     cudaMemcpyAsync(pres_res,dev_presres,T*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp_res,dev_tempres,T*sizeof(int),cudaMemcpyDeviceToHost,stream3);
-
-    cudaStreamSynchronize(stream1); // wait for stream1 to finish
-    cudaStreamSynchronize(stream2); // wait for stream2 to finish
-    cudaStreamSynchronize(stream3); // wait for stream3 to finish
-	
+    
 	cudaEventRecord(stop1);
 
-   //stream 4
-   cudaMalloc( (void**)&dev_hum3, T * sizeof(int) ); //humedad dia 3
-   cudaMalloc( (void**)&dev_errorHum, T * sizeof(int) ); // % error device
-   cudaHostAlloc( (void**)&errorHum, T * sizeof(int), cudaHostAllocDefault ); // % error
-   cudaMalloc( (void**)&dev_phum, T * sizeof(int) ); //prediccion de humedad en device
-
-   //stream 5
-   cudaMalloc( (void**)&dev_ppres, T * sizeof(int) ); //prediccion de presion en device
-   cudaMalloc( (void**)&dev_pres3, T * sizeof(int) ); //presion dia 3
-   cudaMalloc( (void**)&dev_errorPres, T * sizeof(int) ); // % error device
-   cudaHostAlloc( (void**)&errorPres, T * sizeof(int), cudaHostAllocDefault ); // % error
-
-
-   //stream 6
-   cudaMalloc( (void**)&dev_ptemp, T * sizeof(int) ); //prediccion de temperatura en device
-   cudaMalloc( (void**)&dev_temp3, T * sizeof(int) ); //temperatura dia 3
-   cudaMalloc( (void**)&dev_errorTemp, T * sizeof(int) ); // % error device
-   cudaHostAlloc( (void**)&errorTemp, T * sizeof(int), cudaHostAllocDefault ); // % error
-
 	cudaEventRecord(start2);
-
     /* realizacion y lanzamiento de kernels de porcentaje de error */
     cudaMemcpyAsync(dev_phum,hum_res,T*sizeof(int),cudaMemcpyHostToDevice,stream4);
     cudaMemcpyAsync(dev_ppres,pres_res,T*sizeof(int),cudaMemcpyHostToDevice,stream5);
@@ -214,22 +203,25 @@ int main(int argv, char* argc[])
 
     //3 kernels de un bloque de T hilos, un hilo por cada dato
 
-	  porcentajeError<<<1, T, 0, stream4>>>(dev_errorHum, dev_hum3, dev_phum);
-	  porcentajeError<<<1, T, 0, stream5>>>(dev_errorPres, dev_pres3, dev_ppres);
-    porcentajeError<<<1, T, 0, stream6>>>(dev_errorTemp, dev_temp3, dev_ptemp);
+	porcentajeError<<<1, T, 3, stream4>>>(dev_errorHum, dev_hum3, dev_phum);
+	porcentajeError<<<1, T, 4, stream5>>>(dev_errorPres, dev_pres3, dev_ppres);
+    porcentajeError<<<1, T, 5, stream6>>>(dev_errorTemp, dev_temp3, dev_ptemp);
 
-	  cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream4);
+	cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream4);
     cudaMemcpyAsync(errorPres,dev_errorPres,T*sizeof(int),cudaMemcpyDeviceToHost,stream5);
     cudaMemcpyAsync(errorTemp,dev_errorTemp,T*sizeof(int),cudaMemcpyDeviceToHost,stream6);
 
     //Esperar a finalizacion de streams
+    cudaStreamSynchronize(stream1); 
+    cudaStreamSynchronize(stream2); 
+    cudaStreamSynchronize(stream3); 
     cudaStreamSynchronize(stream5);
     cudaStreamSynchronize(stream4);
     cudaStreamSynchronize(stream6);
 
-	cudaEventRecord(stop2);
-	cudaEventSynchronize(stop1);
-	cudaEventSynchronize(stop2);
+    cudaEventRecord(stop2);
+    cudaEventSynchronize(stop1);
+    cudaEventSynchronize(stop2);
 
     //Impresion de datos
     printf("\t\t\t\t\t\t\tPROYECTO FINAL MICROPROCESADORES");
