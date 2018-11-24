@@ -51,10 +51,15 @@ int main(int argv, char* argc[])
     /* creacion streams, un stream por variable
      * (temperatura, presion, humedad) y sus respectivos % de error */
     cudaStream_t stream1, stream2, stream3, stream4, stream5, stream6;
+    cudaEvent_t start1, stop1,start2,stop2;
+    cudaEventCreate(&start1);
+    cudaEventCreate(&stop1);
+    cudaEventCreate(&start2);
+    cudaEventCreate(&stop2);
     cudaStreamCreate(&stream1);
     cudaStreamCreate(&stream2);
     cudaStreamCreate(&stream3);
-	  cudaStreamCreate(&stream4);
+	cudaStreamCreate(&stream4);
     cudaStreamCreate(&stream5);
     cudaStreamCreate(&stream6);
 
@@ -85,8 +90,6 @@ int main(int argv, char* argc[])
     cudaMalloc( (void**)&dev_temp, N * sizeof(int) );
     cudaHostAlloc( (void**)&temp, N * sizeof(int), cudaHostAllocDefault );
     cudaHostAlloc( (void**)&temp_res, T * sizeof(int), cudaHostAllocDefault );
-
-
 
     //stream 2
     cudaMalloc( (void**)&dev_hum, N * sizeof(int) );
@@ -165,6 +168,8 @@ int main(int argv, char* argc[])
         secs3[i] = (i+N); //48hr + segs del tercer dia
     }
 
+	cudaEventRecord(start1);
+
     /* lanzamiento de kernels para la prediccion
      * se lanzaran N threads en los que cada uno calculara
      * la prediccion en la hora correspondiente de su variable correspondiente. */
@@ -184,7 +189,29 @@ int main(int argv, char* argc[])
 	cudaMemcpyAsync(hum_res,dev_humres,T*sizeof(int),cudaMemcpyDeviceToHost,stream1);
     cudaMemcpyAsync(pres_res,dev_presres,T*sizeof(int),cudaMemcpyDeviceToHost,stream2);
     cudaMemcpyAsync(temp_res,dev_tempres,T*sizeof(int),cudaMemcpyDeviceToHost,stream3);
+    
+	cudaEventRecord(stop1);
 
+    //stream 4
+    cudaMalloc( (void**)&dev_hum3, T * sizeof(int) ); //humedad dia 3
+    cudaMalloc( (void**)&dev_errorHum, T * sizeof(int) ); // % error device
+    cudaHostAlloc( (void**)&errorHum, T * sizeof(int), cudaHostAllocDefault ); // % error
+    cudaMalloc( (void**)&dev_phum, T * sizeof(int) ); //prediccion de humedad en device
+
+    //stream 5
+    cudaMalloc( (void**)&dev_ppres, T * sizeof(int) ); //prediccion de presion en device
+    cudaMalloc( (void**)&dev_pres3, T * sizeof(int) ); //presion dia 3
+    cudaMalloc( (void**)&dev_errorPres, T * sizeof(int) ); // % error device
+    cudaHostAlloc( (void**)&errorPres, T * sizeof(int), cudaHostAllocDefault ); // % error
+
+
+    //stream 6
+    cudaMalloc( (void**)&dev_ptemp, T * sizeof(int) ); //prediccion de temperatura en device
+    cudaMalloc( (void**)&dev_temp3, T * sizeof(int) ); //temperatura dia 3
+    cudaMalloc( (void**)&dev_errorTemp, T * sizeof(int) ); // % error device
+    cudaHostAlloc( (void**)&errorTemp, T * sizeof(int), cudaHostAllocDefault ); // % error
+
+	cudaEventRecord(start2);
     /* realizacion y lanzamiento de kernels de porcentaje de error */
     cudaMemcpyAsync(dev_phum,hum_res,T*sizeof(int),cudaMemcpyHostToDevice,stream4);
     cudaMemcpyAsync(dev_ppres,pres_res,T*sizeof(int),cudaMemcpyHostToDevice,stream5);
@@ -199,7 +226,7 @@ int main(int argv, char* argc[])
 	porcentajeError<<<1, T, 4, stream5>>>(dev_errorPres, dev_pres3, dev_ppres);
     porcentajeError<<<1, T, 5, stream6>>>(dev_errorTemp, dev_temp3, dev_ptemp);
 
-	  cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream4);
+	cudaMemcpyAsync(errorHum,dev_errorHum,T*sizeof(int),cudaMemcpyDeviceToHost,stream4);
     cudaMemcpyAsync(errorPres,dev_errorPres,T*sizeof(int),cudaMemcpyDeviceToHost,stream5);
     cudaMemcpyAsync(errorTemp,dev_errorTemp,T*sizeof(int),cudaMemcpyDeviceToHost,stream6);
 
@@ -211,13 +238,16 @@ int main(int argv, char* argc[])
     cudaStreamSynchronize(stream4);
     cudaStreamSynchronize(stream6);
 
+	  cudaEventRecord(stop2);
+	  cudaEventSynchronize(stop1);
+	  cudaEventSynchronize(stop2);
 
     //Impresion de datos
     printf("\t\t\t\t\t\t\tPROYECTO FINAL MICROPROCESADORES");
     printf("\n\t\t\t\t\t\tAndrea Arguello 17801 \t Ana Lucia Hernandez 17138\n");
 
     printf("\n|\t\t\t\t\t\t\tDATOS TOMADOS DE LOS PRIMEROS DOS DIAS\t\t\t\t\t\t|");
-    printf("\n|    Minutos\t|\t\t\t\tDIA 1\t\t\t|\t\t\t\tDIA 2\t\t\t|");
+    printf("\n|    Minutos\t|\t\t\tDIA 1\t\t\t\t|\t\t\t\tDIA 2\t\t\t|");
     for(int i=0; i<T; i++){
       printf("\n|\t%d.\t|\tH: %.2f\tP: %.2f\tT: %.2f\t|\tH: %.2f\tP: %.2f\tT: %.2f\t|",i*15,hum[i],pres[i],temp[i],hum[i+T],pres[i+T],temp[i+T]);
     }
@@ -235,7 +265,11 @@ int main(int argv, char* argc[])
     }
     MiArchivo.close();
 
-    printf("TIEMPOS DE EJECUCION");
+	float total1=0;
+	cudaEventElapsedTime(&total1, start1, stop1);
+	float total2=0;
+	cudaEventElapsedTime(&total2, start2, stop2);
+    printf("\n\n|\t\t\tTIEMPOS DE EJECUCION\t\t\t|\n|\tPredicciones: %.4fs\t|\t%% de error: %.4fs\t|",total1,total2);
 
     //Destruccion de streams
     cudaStreamDestroy(stream1);
