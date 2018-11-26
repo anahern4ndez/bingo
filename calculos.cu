@@ -240,7 +240,7 @@ int main(int argv, char* argc[])
     {
         if (MiArchivo.is_open())
         {
-            MiArchivo <<hum_res[i]<<","<< errorHum[i]<<","<<pres_res[i]<<","<<errorPres[i]<<","<<temp_res[i]<<","<<errorTemp[i]<<","<<(secs[i]+192)*900<<"\n";
+            MiArchivo <<hum_res[i]<<","<< errorHum[i]<<","<<pres_res[i]<<","<<errorPres[i]<<","<<temp_res[i]<<","<<errorTemp[i]<<","<<fechas3[i]<<"\n";
             printf("| %d.\t|  Teorica %.2f\tPrediccion %.2f (%.2f%% de error)\t|\tTeorica %.2f\tPrediccion %.2f (%.2f%% de error)\t|\tTeorica %.2f\tExperimental %.2f (%.2f%% de error)\t|\n",(int)secs[i]*15, hum3[i], hum_res[i], errorHum[i], pres3[i], pres_res[i], errorPres[i], temp3[i], temp_res[i], errorTemp[i]);
         }
     }
